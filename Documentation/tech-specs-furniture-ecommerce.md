@@ -121,7 +121,7 @@ Create a blog section for topics like "How to Choose the Best Furniture," "Furni
 SEO Best Practices:
 
 Add meta titles and descriptions for all pages.
-Use alt tags for all images (e.g., <img alt="Wooden Bed">).
+Use alt tags for all images (e.g., <img !alt="Wooden Bed"(https://www.sarcrafts.com/wp-content/uploads/2022/12/bed-2-800x800.jpg)>).
 Perform keyword research for terms like "affordable furniture in Pakistan," "customizable sofas," or "furniture on installments in Pakistan."
 Tools:
 
