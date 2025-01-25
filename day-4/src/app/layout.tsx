@@ -9,8 +9,9 @@ import Footer from "@/components/Footer";
 import { Toaster } from "@/components/ui/sonner";
 
 import { WishlistProvider } from "@/context/WishlistContext";
-import { CartProvider } from "@/context/CartContext";
+
 import { OrderProvider } from "@/context/OrderContext";
+import ReduxProvider from "@/components/ReduxProvider";
 
 // Metadata for the application
 export const metadata: Metadata = {
@@ -22,9 +23,7 @@ export const metadata: Metadata = {
 function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WishlistProvider>
-      <CartProvider>
-        <OrderProvider>{children}</OrderProvider>
-      </CartProvider>
+      <OrderProvider>{children}</OrderProvider>
     </WishlistProvider>
   );
 }
@@ -51,12 +50,14 @@ export default function RootLayout({
           >
             <Providers>
               {/* Global layout structure */}
-              <Navbar />
-              <main className="min-h-screen py-4 px-4 sm:px-6 lg:px-8">
-                {children}
-              </main>
-              <Toaster />
-              <Footer />
+              <ReduxProvider>
+                <Navbar />
+                <main className="min-h-screen py-4 px-4 sm:px-6 lg:px-8">
+                  {children}
+                </main>
+                <Toaster />
+                <Footer />
+              </ReduxProvider>
             </Providers>
           </ThemeProvider>
         </body>

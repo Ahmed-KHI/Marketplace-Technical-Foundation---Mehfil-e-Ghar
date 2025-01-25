@@ -4,6 +4,13 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface Order {
   id: string;
+  status: string;
+  subtotal: number; // Total before discount, shipping, and tax
+  discount: number; // Discount percentage (e.g., 0.1 for 10%)
+  discountValue: number; // Discount amount (e.g., Rs. 200)
+  shippingFee: number; // Fixed shipping fee
+  tax: number; // Fixed tax
+  total: number; // Final total after discount, shipping, and tax
   items: {
     productId: string;
     name: string;
@@ -11,8 +18,6 @@ interface Order {
     quantity: number;
     imageUrl: string;
   }[];
-  total: number;
-  status: string;
   createdAt: string;
 }
 
@@ -32,6 +37,11 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       items: [
         { productId: 'p1', name: 'Product 1', price: 100, quantity: 2, imageUrl: '' },
       ],
+      subtotal: 200,
+      discount: 0,
+      discountValue: 0,
+      shippingFee: 0,
+      tax: 0,
       total: 200,
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -41,6 +51,11 @@ export const OrderProvider = ({ children }: { children: ReactNode }) => {
       items: [
         { productId: 'p2', name: 'Product 2', price: 50, quantity: 1, imageUrl: '' },
       ],
+      subtotal: 50,
+      discount: 0,
+      discountValue: 0,
+      shippingFee: 0,
+      tax: 0,
       total: 50,
       status: 'completed',
       createdAt: new Date().toISOString(),

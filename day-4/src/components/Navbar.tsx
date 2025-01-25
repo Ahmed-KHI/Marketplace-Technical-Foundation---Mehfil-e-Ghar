@@ -1,4 +1,5 @@
 "use client";
+
 import Image from "next/image";
 import React, { useState } from "react";
 import Link from "next/link";
@@ -20,13 +21,18 @@ import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeButton from "@/components/theme-button";
 import HeaderTop from "./HeaderTop";
-import { useWishList } from "@/context/WishlistContext";
-import { useCart } from "@/context/CartContext";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/redux/store";
 
 const Navbar = () => {
   const [isCategoriesOpen, setCategoriesOpen] = useState(false);
-  const { cart } = useCart();
-  const { wishlist } = useWishList();
+
+  // Access wishlist and cart state from Redux
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+
+  // Calculate total quantity of items in the cart
+  const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <>
@@ -68,8 +74,7 @@ const Navbar = () => {
             </ul>
           </div>
           <div className="flex items-center gap-4 ml-8">
-            {" "}
-            {/* Add ml-8 to add space between logo and icons */}
+            {/* Wishlist Icon */}
             <Link href={"/wishlist"}>
               <span className="relative">
                 <svg
@@ -83,11 +88,16 @@ const Navbar = () => {
                     data-original="#000000"
                   />
                 </svg>
-                <span className="absolute left-auto -ml-1 top-0 rounded-full bg-orange-600 px-1 py-0 text-xs text-white">
-                  {wishlist.length}
-                </span>
+                {/* Wishlist Count */}
+                {wishlistItems.length > 0 && (
+                  <span className="absolute left-auto -ml-1 top-0 rounded-full bg-orange-600 px-1 py-0 text-xs text-white">
+                    {wishlistItems.length}
+                  </span>
+                )}
               </span>
             </Link>
+
+            {/* Cart Icon */}
             <Link href={"/cart"}>
               <span className="relative">
                 <svg
@@ -102,11 +112,16 @@ const Navbar = () => {
                     data-original="#000000"
                   ></path>
                 </svg>
-                <span className="absolute left-auto -ml-1 top-0 rounded-full bg-orange-600 px-1 py-0 text-xs text-white">
-                  {cart.length}
-                </span>
+                {/* Cart Count */}
+                {totalQuantity > 0 && (
+                  <span className="absolute left-auto -ml-1 top-0 rounded-full bg-orange-600 px-1 py-0 text-xs text-white">
+                    {totalQuantity}
+                  </span>
+                )}
               </span>
             </Link>
+
+            {/* Authentication and Theme Buttons */}
             <SignedOut>
               <SignInButton />
             </SignedOut>
@@ -114,6 +129,8 @@ const Navbar = () => {
               <UserButton />
             </SignedIn>
             <ThemeButton />
+
+            {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button

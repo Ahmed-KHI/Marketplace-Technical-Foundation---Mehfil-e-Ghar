@@ -1,12 +1,43 @@
 "use client";
+
 import { useState } from "react";
-import { useCart } from "@/context/CartContext";
-import { urlFor } from "../utils/sanity";
 import Image from "next/image";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/app/redux/store";
+import { clearCart } from "@/app/redux/cartSlice";
+import { v4 as uuidv4 } from "uuid";
+import { useOrder } from "@/context/OrderContext";
+
+interface CartItem {
+  id: string; // Ensure _id is included
+  title: string;
+  price: number;
+  image: string;
+  quantity: number;
+}
+
+interface BillingDetails {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+}
+
+interface CardDetails {
+  cardNumber: string;
+  expiry: string;
+  cvc: string;
+}
 
 export default function Checkout() {
-  const { cart } = useCart();
-  const [billingDetails, setBillingDetails] = useState({
+  const cart = useSelector((state: RootState) => state.cart.items);
+  const discount = useSelector((state: RootState) => state.cart.discount);
+  const dispatch = useDispatch();
+  const { addOrder } = useOrder();
+
+  const [billingDetails, setBillingDetails] = useState<BillingDetails>({
     name: "",
     email: "",
     phone: "",
@@ -14,19 +45,26 @@ export default function Checkout() {
     city: "",
     postalCode: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState("COD");
-  const [cardDetails, setCardDetails] = useState({
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "credit">("COD");
+  const [cardDetails, setCardDetails] = useState<CardDetails>({
     cardNumber: "",
     expiry: "",
     cvc: "",
   });
+  const [orderId, setOrderId] = useState<string | null>(null);
 
-  const subTotal = cart.reduce(
-    (total, item) => total + item.price * 1, // Assuming 1 quantity for each item, modify as needed
-    0
-  );
+  const subTotal = cart.reduce<number>((total: number, product: CartItem) => {
+    return total + (product.price || 0) * (product.quantity || 0);
+  }, 0);
 
-  const handleBillingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const shippingFee = 2.0;
+  const tax = 4.0;
+  const discountValue = subTotal * discount;
+  const total = subTotal + shippingFee + tax - discountValue;
+
+  const handleBillingChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setBillingDetails({
       ...billingDetails,
       [e.target.name]: e.target.value,
@@ -43,19 +81,43 @@ export default function Checkout() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const newOrderId = uuidv4();
+
+    const newOrder = {
+      id: newOrderId,
+      status: "pending",
+      subtotal: subTotal, // Ensure this is a number
+      discount: discount,
+      discountValue: discountValue,
+      shippingFee: shippingFee,
+      tax: tax,
+      total: total,
+      items: cart.map((product) => ({
+        productId: product.id, // Use product._id
+        name: product.title,
+        price: product.price,
+        quantity: product.quantity,
+        imageUrl: product.image,
+      })),
+      createdAt: new Date().toISOString(),
+    };
+
     if (paymentMethod === "credit") {
-      // Simulate Stripe payment processing (Replace with real API integration)
       try {
         alert(`Processing payment for card ending ${cardDetails.cardNumber.slice(-4)}`);
-        // Replace with actual payment API call
         console.log("Payment successful!");
+        addOrder(newOrder);
+        setOrderId(newOrderId);
+        dispatch(clearCart());
       } catch (error) {
         console.error("Payment failed:", error);
         alert("Payment failed. Please try again.");
       }
     } else {
-      // Handle COD order submission
       alert("Order placed successfully with Cash on Delivery!");
+      addOrder(newOrder);
+      setOrderId(newOrderId);
+      dispatch(clearCart());
     }
   };
 
@@ -65,6 +127,7 @@ export default function Checkout() {
       <hr className="border-gray-300 mt-4 mb-8" />
 
       <div className="grid md:grid-cols-2 gap-6">
+        {/* Billing Details and Payment Form */}
         <div>
           <h3 className="text-xl font-semibold text-gray-300 mb-4">Billing Details</h3>
           <form onSubmit={handleSubmit}>
@@ -183,7 +246,7 @@ export default function Checkout() {
             <div className="mt-8">
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-orange-600 text-white rounded-md"
+                className="w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
               >
                 Place Order
               </button>
@@ -191,50 +254,65 @@ export default function Checkout() {
           </form>
         </div>
 
+        {/* Order Summary */}
         <div>
           <h3 className="text-xl font-semibold text-gray-300 mb-4">Order Summary</h3>
           <div className="space-y-4">
-            {cart.map((e) => (
-              <div key={e._id} className="flex items-center justify-between">
+            {cart.map((product: CartItem, index: number) => (
+              <div key={product.id || `product-${index}`} className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-white p-2 rounded-md">
                     <Image
-                      alt={e.name}
+                      alt={product.title}
                       width={100}
                       height={100}
-                      src={urlFor(e.image).width(400).url()}
+                      src={product.image}
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <h4 className="text-base font-bold text-gray-800">{e.name}</h4>
+                  <h4 className="text-base font-bold text-gray-800">{product.title}</h4>
                 </div>
                 <div className="text-base font-bold text-gray-800">
-                  ${e.price}
+                  Rs.{(product.price || 0).toFixed(2)} x {product.quantity}
                 </div>
               </div>
             ))}
 
             <div className="flex items-center justify-between mt-6">
               <span className="font-semibold text-gray-300">Subtotal:</span>
-              <span className="font-semibold text-gray-300">${subTotal}</span>
+              <span className="font-semibold text-gray-300">Rs.{subTotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-semibold text-gray-300">Shipping:</span>
-              <span className="font-semibold text-gray-300">$2.00</span>
+              <span className="font-semibold text-gray-300">Rs.{shippingFee.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-semibold text-gray-300">Tax:</span>
-              <span className="font-semibold text-gray-300">$4.00</span>
+              <span className="font-semibold text-gray-300">Rs.{tax.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-300">Discount ({discount * 100}%):</span>
+              <span className="font-semibold text-gray-300">- Rs.{discountValue.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between mt-4">
               <span className="text-xl font-bold text-gray-300">Total:</span>
               <span className="text-xl font-bold text-gray-300">
-                ${subTotal + 6}
+                Rs.{total.toFixed(2)}
               </span>
             </div>
           </div>
         </div>
       </div>
+
+      {orderId && (
+        <div className="mt-8 bg-green-100 border border-green-300 p-4 rounded-md">
+          <p className="text-green-700 font-bold">Your order has been placed successfully!</p>
+          <p className="text-green-700">Order ID: {orderId}</p>
+          <p className="text-gray-700 mt-2">
+            Please save this order ID for future reference and order tracking.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

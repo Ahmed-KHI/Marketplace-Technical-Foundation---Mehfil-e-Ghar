@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import Image from "next/image";
 import FilterBar from "@/components/ProductPageComponents/FilterBar";
@@ -17,7 +18,7 @@ const ProductPage: React.FC = () => {
       </div>
 
       <main className="pt-4">
-        <FilterBar />
+        <FilterBar onSortChange={(sortBy: string) => console.log(sortBy)} />
       </main>
 
       <main className="pt-6">

@@ -1,89 +1,83 @@
-import React from "react";
-import { FaChevronDown } from "react-icons/fa";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+"use client";
 
-const FilterBar: React.FC = () => {
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FaChevronDown } from 'react-icons/fa';
+import  {DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { fetchCategories } from '../../app/utils/fetchCategories';
+
+interface FilterBarProps {
+  onSortChange: (sortBy: string) => void;
+  selectedCategory?: string;
+  selectedSort?: string;
+}
+
+const FilterBar: React.FC<FilterBarProps> = ({ onSortChange, selectedCategory, selectedSort }) => {
+  const router = useRouter();
+  const [categories, setCategories] = useState<{ title: string; slug: string | null }[]>([]);
+  const [selectedSortState, setSelectedSortState] = useState<string | undefined>(selectedSort);
+
+  useEffect(() => {
+    const getCategories = async () => {
+      const fetchedCategories = await fetchCategories();
+      setCategories(fetchedCategories);
+    };
+
+    getCategories();
+  }, []);
+
+  const handleCategorySelect = (slug: string | null) => {
+    if (slug) {
+      router.push(`/products/${slug}`);
+    } else {
+      router.push("/products");
+    }
+  };
+
+  const handleSortSelect = (sortBy: string) => {
+    setSelectedSortState(sortBy);
+    onSortChange(sortBy);
+  };
+
   return (
-    <div className="bg-gray-100 dark:text-white dark:bg-gray-800 shadow-md h-[96px] sm:h-[64px] w-full max-w-[1440px] mx-auto rounded-md flex items-center justify-between px-4 sm:px-6 md:px-10">
-      <div className="hidden sm:flex space-x-6">
-        {["Category", "Product type", "Price", "Brand"].map((filter) => (
-          <div key={filter} className="relative flex items-center space-x-2">
-            <button className="text-sm font-medium text-gray-600 dark:text-white hover:text-gray-900">
-              {filter}
-            </button>
+    <div className="bg-gray-100 dark:text-white dark:bg-gray-800 shadow-md h-auto sm:h-[64px] w-full max-w-[1440px] mx-auto rounded-md flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 md:px-10 py-2 sm:py-0 space-y-2 sm:space-y-0">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center space-x-2 text-sm font-medium text-gray-600 dark:text-white hover:text-gray-900 px-4 py-2 rounded-lg">
+            <span>{selectedCategory || "All Categories"}</span>
             <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
-          </div>
-        ))}
-      </div>
-
-      <div className="hidden sm:flex items-center space-x-4">
-        <span className="text-sm font-medium text-gray-500 dark:text-white">
-          Sorting by:
-        </span>
-        <div className="relative flex items-center space-x-2">
-          <button className="text-sm font-medium text-gray-600 dark:text-white hover:text-gray-900">
-            Date added
           </button>
-          <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
-        </div>
-      </div>
-
-      <div className="sm:hidden flex w-full justify-between">
-        <Dialog>
-          <DialogTrigger asChild>
-            <button className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-white px-4 py-2 rounded-lg">
-              <span>Filters</span>
-              <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
-            </button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogTitle className="sr-only">Filters</DialogTitle>
-            <div className="flex flex-col space-y-6">
-              {["Category", "Product type", "Price", "Brand"].map((filter) => (
-                <div
-                  key={filter}
-                  className="relative flex items-center space-x-2"
-                >
-                  <button className="text-sm font-medium text-gray-600 dark:text-white hover:text-gray-900">
-                    {filter}
-                  </button>
-                  <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog>
-          <DialogTrigger asChild>
-            <button className="flex items-center space-x-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-white px-4 py-2 rounded-lg">
-              <span>Sorting</span>
-              <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
-            </button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogTitle className="sr-only">Sorting</DialogTitle>
-            <div className="flex flex-col space-y-6">
-              <div className="relative flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-500 dark:text-white">
-                  Sorting by:
-                </span>
-                <div className="flex items-center space-x-2">
-                  <button className="text-sm font-medium text-gray-600 dark:text-white hover:text-gray-900">
-                    Date added
-                  </button>
-                  <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          {categories.map((category, index) => (
+            <DropdownMenuItem
+              key={category.slug || index}
+              onClick={() => handleCategorySelect(category.slug)}
+            >
+              {category.title}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center space-x-2 text-sm font-medium text-gray-600 dark:text-white hover:text-gray-900 px-4 py-2 rounded-lg">
+            <span>{selectedSortState}</span>
+            <FaChevronDown className="text-gray-500 dark:text-white text-xs" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => handleSortSelect("Date added")}>
+            Date added
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSortSelect("Price (Low to High)")}>
+            Price (Low to High)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleSortSelect("Price (High to Low)")}>
+            Price (High to Low)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

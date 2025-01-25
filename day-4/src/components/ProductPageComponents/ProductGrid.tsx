@@ -2,22 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import { client } from "@/sanity/lib/client";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import ProductCard from "./ProductCard";
+
+
 
 // Fetch products from the Sanity CMS
 async function fetchProducts() {
   const query = `*[_type == "products"]{
+    _id,
     title,
     price,
+    priceWithoutDiscount,
+    badge,
     "imageUrl": image.asset->url,
+    category,
+    description,
     inventory,
+    tags,
     "slug": slug.current
   }`;
   try {
@@ -31,73 +32,19 @@ async function fetchProducts() {
 
 // Product interface
 interface Product {
+  _id: string; // Unique identifier for the product
   title: string;
   price: number;
-  imageUrl: string | null;
+  priceWithoutDiscount?: number; // Optional field
+  badge?: string; // Optional field
+  imageUrl: string | null; // Image URL from Sanity
+  category?: { _ref: string }; // Optional reference to a category
+  description?: string; // Optional field
   inventory: number;
-  slug: string;
+  tags?: string[]; // Optional array of tags
+  slug: string; // Unique slug for the product
 }
 
-// ProductCard Component
-function ProductCard({ product }: { product: Product }) {
-  const [cart, setCart] = useState<Product[]>([]);
-  const [wishlist, setWishlist] = useState<Product[]>([]);
-
-  const handleAddToCart = (product: Product) => {
-    setCart([...cart, product]);
-    console.log("Added to cart:", product);
-  };
-
-  const handleAddToWishlist = (product: Product) => {
-    setWishlist([...wishlist, product]);
-    console.log("Added to wishlist:", product);
-  };
-
-  return (
-    <Card className="w-full shadow-lg border rounded-lg">
-      <CardHeader className="p-4">
-        {product.imageUrl ? (
-          <Image
-            src={product.imageUrl}
-            alt={product.title}
-            width={350}
-            height={350}
-            className="rounded-lg object-cover w-full h-64"
-          />
-        ) : (
-          <div className="h-64 bg-gray-300 rounded-lg flex items-center justify-center">
-            <span>No Image Available</span>
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="p-4">
-        <h2 className="text-lg font-semibold">{product.title}</h2>
-        <p className="text-lg font-medium text-gray-800 dark:text-gray-400">
-          £ {product.price.toFixed(2)}
-        </p>
-        <p className="text-sm text-green-700">
-          {product.inventory > 0 ? "In Stock" : "Out of Stock"}
-        </p>
-      </CardContent>
-      <CardFooter className="p-4 flex flex-wrap items-center gap-2 justify-between">
-        
-        <Button
-          className="flex-1 sm:flex-none min-w-[8rem] bg-blue-600 hover:bg-blue-700 text-white"
-          disabled={product.inventory <= 0}
-          onClick={() => handleAddToCart(product)}
-        >
-          Add to Cart
-        </Button>
-        <Button
-          className="flex-1 sm:flex-none min-w-[8rem] bg-gray-600 hover:bg-gray-700 text-white"
-          onClick={() => handleAddToWishlist(product)}
-        >
-          Add to Wishlist
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
 
 // ProductGrid Component
 export default function ProductGrid() {
@@ -173,6 +120,7 @@ export default function ProductGrid() {
           </div>
         )}
       </div>
+      
     </div>
   );
 }

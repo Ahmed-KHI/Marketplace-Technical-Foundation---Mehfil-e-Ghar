@@ -1,82 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Trash2, PlusCircle, MinusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-
-interface WishlistItem {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-}
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/app/redux/store";
+import {
+  removeFromWishlist,
+  updateWishlistItemQuantity,
+  clearWishlist,
+} from "@/app/redux/wishlistSlice";
+import { addToCart, setDiscount } from "@/app/redux/cartSlice"; // Import the addToCart and setDiscount actions
+import { toast } from "sonner"; // Optional: For toast notifications
 
 export default function Wishlist() {
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+  const dispatch = useDispatch();
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items);
   const [discountCode, setDiscountCode] = useState<string>("");
   const [discountAmount, setDiscountAmount] = useState<number>(0);
 
   // Apply Discount
   const applyDiscount = () => {
     const discountCodes = {
-      "SAVE10": 0.10, // 10% off
-      "SAVE20": 0.20, // 20% off
+      SAVE10: 0.1, // 10% off
+      SAVE20: 0.2, // 20% off
     };
 
-    const discount = discountCodes[discountCode.toUpperCase() as keyof typeof discountCodes] || 0;
+    const discount =
+      discountCodes[discountCode.toUpperCase() as keyof typeof discountCodes] || 0;
     setDiscountAmount(discount);
   };
 
   const handleRemoveItem = (id: string) => {
-    const updatedWishlist = wishlistItems.filter((item) => item.id !== id);
-    setWishlistItems(updatedWishlist);
-    localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+    dispatch(removeFromWishlist(id));
   };
 
   const handleQuantityChange = (id: string, action: "increase" | "decrease") => {
-    const updatedWishlist = wishlistItems.map((item) =>
-      item.id === id
-        ? { ...item, quantity: action === "increase" ? item.quantity + 1 : item.quantity - 1 }
-        : item
-    );
-    setWishlistItems(updatedWishlist);
-    localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+    const item = wishlistItems.find((item) => item.id === id);
+    if (item) {
+      const newQuantity = action === "increase" ? item.quantity + 1 : item.quantity - 1;
+      dispatch(updateWishlistItemQuantity({ id, quantity: newQuantity }));
+    }
   };
 
   const handleClearWishlist = () => {
-    setWishlistItems([]);
-    localStorage.removeItem("wishlist");
+    dispatch(clearWishlist());
   };
 
   const handleMoveToCart = () => {
-    const cartItems = localStorage.getItem("cart") ? JSON.parse(localStorage.getItem("cart")!) : [];
-    const updatedCart = [...cartItems, ...wishlistItems];
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
-    handleClearWishlist(); // Clear wishlist after moving to cart
-    alert("All items have been moved to your cart!");
+    // Move all wishlist items to the cart
+    wishlistItems.forEach((product) => {
+      const cartItem = {
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.imageUrl,
+        quantity: product.quantity,
+      };
+      dispatch(addToCart(cartItem)); // Dispatch addToCart for each item
+    });
+
+    // Clear the wishlist after moving items to the cart
+    dispatch(clearWishlist());
+
+    // Calculate the total amount with discount
+    const subtotal = wishlistItems.reduce((total, product) => total + product.price * product.quantity, 0);
+    const discountValue = subtotal * discountAmount;
+    const total = subtotal - discountValue;
+
+    // Set the discount in the cart state
+    dispatch(setDiscount(discountAmount));
+
+    // Show a toast notification with the total amount and discount
+    toast.success(
+      `All items have been moved to your cart! Total: Rs. ${total.toLocaleString()} (Discount: Rs. ${discountValue.toLocaleString()})`
+    );
   };
 
-  useEffect(() => {
-    const storedWishlist = localStorage.getItem("wishlist");
-    if (storedWishlist) {
-      try {
-        const parsedWishlist = JSON.parse(storedWishlist);
-        const transformedWishlist: WishlistItem[] = parsedWishlist.map((item: WishlistItem) => ({
-          ...item,
-          quantity: item.quantity || 1, // Default quantity to 1
-        }));
-        setWishlistItems(transformedWishlist);
-      } catch (error) {
-        console.error("❌ Error parsing wishlist data:", error);
-      }
-    }
-  }, []);
-
-  const subtotal = wishlistItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const subtotal = wishlistItems.reduce((total, product) => total + product.price * product.quantity, 0);
   const discountValue = subtotal * discountAmount;
   const total = subtotal - discountValue;
 
@@ -95,7 +99,7 @@ export default function Wishlist() {
           </div>
         </div>
       </div>
-      
+
       <div className="grid md:grid-cols-2 gap-8">
         {/* Wishlist Items */}
         <Card className="col-span-2 md:col-span-1 bg-white shadow-lg rounded-lg border-2 border-gray-200">
@@ -105,12 +109,12 @@ export default function Wishlist() {
           <CardContent>
             <div className="space-y-4">
               {wishlistItems.length > 0 ? (
-                wishlistItems.map((item, index) => (
-                  <div key={index} className="flex items-center space-x-4 border-b py-4">
+                wishlistItems.map((product) => (
+                  <div key={product.id} className="flex items-center space-x-4 border-b py-4">
                     <div className="relative w-24 h-24 rounded-md overflow-hidden shadow-sm">
                       <Image
-                        src={item.image}
-                        alt={item.name}
+                        src={product.imageUrl || "/images/default-placeholder.jpg"}
+                        alt={product.title}
                         layout="intrinsic"
                         width={96}
                         height={96}
@@ -118,22 +122,22 @@ export default function Wishlist() {
                       />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-800">{item.name}</h3>
-                      <p className="text-sm text-gray-500">Rs. {item.price}</p>
+                      <h3 className="font-semibold text-gray-800">{product.title}</h3>
+                      <p className="text-sm text-gray-500">Rs. {product.price}</p>
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleQuantityChange(item.id, "decrease")}
-                          disabled={item.quantity <= 1}
+                          onClick={() => handleQuantityChange(product.id, "decrease")}
+                          disabled={product.quantity <= 1}
                         >
                           <MinusCircle className="h-4 w-4" />
                         </Button>
-                        <span>{item.quantity}</span>
+                        <span>{product.quantity}</span>
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleQuantityChange(item.id, "increase")}
+                          onClick={() => handleQuantityChange(product.id, "increase")}
                         >
                           <PlusCircle className="h-4 w-4" />
                         </Button>
@@ -142,7 +146,7 @@ export default function Wishlist() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleRemoveItem(item.id)}
+                      onClick={() => handleRemoveItem(product.id)}
                       className="text-red-500 hover:bg-red-100 transition-all"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -197,7 +201,7 @@ export default function Wishlist() {
               </Button>
             </div>
           </CardContent>
-          <CardFooter className="inline-grid ">
+          <CardFooter className="inline-grid">
             <Button
               className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:bg-indigo-700"
               onClick={handleMoveToCart}

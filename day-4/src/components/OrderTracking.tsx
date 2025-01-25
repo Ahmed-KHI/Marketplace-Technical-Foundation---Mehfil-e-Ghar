@@ -11,6 +11,10 @@ const OrderTracking = () => {
     status: string;
     total: number;
     items: { productId: string; name: string; price: number; quantity: number }[];
+    discount: number; // Add discount field
+    subtotal: number; // Add subtotal field
+    shippingFee: number; // Add shippingFee field
+    tax: number; // Add tax field
   }
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -18,14 +22,11 @@ const OrderTracking = () => {
 
   const handleTrackOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Tracking ID submitted:", trackingId);
     const foundOrder = getOrderById(trackingId);
     if (foundOrder) {
-      console.log("Order found:", foundOrder);
       setOrder(foundOrder);
       setError("");
     } else {
-      console.log("Order not found");
       setOrder(null);
       setError("Order not found.");
     }
@@ -51,12 +52,19 @@ const OrderTracking = () => {
         <div className="bg-transparent shadow-lg rounded-lg p-6">
           <h2 className="text-xl font-semibold">Order ID: {order.id}</h2>
           <p>Status: {order.status}</p>
-          <p>Total: Rs. {order.total}</p>
+          <p>Subtotal: Rs. {order.subtotal.toFixed(2)}</p>
+          <p>
+            Discount: Rs. {(order.discount * order.subtotal).toFixed(2)} (
+            {(order.discount * 100).toFixed(0)}%)
+          </p>
+          <p>Shipping Fee: Rs. {order.shippingFee.toFixed(2)}</p>
+          <p>Tax: Rs. {order.tax.toFixed(2)}</p>
+          <p>Total: Rs. {order.total.toFixed(2)}</p>
           <h3 className="text-lg font-semibold mt-4">Items:</h3>
           <ul>
-            {order.items.map((item: { productId: string; name: string; price: number; quantity: number }) => (
+            {order.items.map((item) => (
               <li key={item.productId}>
-                {item.name} - Rs. {item.price} x {item.quantity}
+                {item.name} - Rs. {item.price.toFixed(2)} x {item.quantity}
               </li>
             ))}
           </ul>
