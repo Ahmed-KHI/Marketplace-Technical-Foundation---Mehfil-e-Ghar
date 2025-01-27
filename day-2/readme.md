@@ -1,4 +1,7 @@
-**General E-Commerce Website...**
+
+**DAY : 2**
+
+**TECHNICAL FOUNDATION OF Mehfil-e-Ghar**
 
 Goal: Plan how my website will look and function visually, aligning with business goals and user expectations.
 
