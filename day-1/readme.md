@@ -1,6 +1,6 @@
 𝗗𝗔𝗬 : 𝟭
 
-**Establishing the Framework for the Furniture Shop.co Market Place Initiative**
+**Establishing the Framework for Mehfil-e-Ghar Initiative**
 
 Overview :
 
